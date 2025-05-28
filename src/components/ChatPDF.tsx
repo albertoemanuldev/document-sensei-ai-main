@@ -290,7 +290,7 @@ const ChatPDF = () => {
 
             {/* PDF Viewer - Hidden on mobile when no conversation */}
             {currentConversation && pdfUrl && (
-              <div className="hidden md:block w-1/2 border-r border-gray-200">
+              <div className="hidden md:flex w-1/2 border-r border-gray-200 h-screen max-h-screen flex-col">
                 <PDFViewerPanel
                   currentConversation={currentConversation}
                   pdfUrl={pdfUrl}
@@ -300,7 +300,7 @@ const ChatPDF = () => {
             )}
 
             {/* Chat Area */}
-            <div className={`${currentConversation && pdfUrl ? 'w-full md:w-1/2' : 'w-full'} flex flex-col`}>
+            <div className={`${currentConversation && pdfUrl ? 'w-full md:w-1/2' : 'w-full'} flex flex-col h-screen max-h-screen overflow-y-auto`}>
               <ChatArea
                 currentConversation={currentConversation}
                 messages={messages}
