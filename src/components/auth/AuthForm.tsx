@@ -140,9 +140,13 @@ const AuthForm = () => {
         </div>
 
         {error && (
-          <div className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-            <AlertCircle className="w-5 h-5 text-red-500" />
-            <span className="text-sm text-red-700">{error}</span>
+          <div className={`flex items-center space-x-2 p-3 rounded-lg border
+            ${error.includes('Conta criada com sucesso')
+              ? 'bg-green-50 border-green-200'
+              : 'bg-red-50 border-red-200'}
+          `}>
+            <AlertCircle className={`w-5 h-5 ${error.includes('Conta criada com sucesso') ? 'text-green-500' : 'text-red-500'}`} />
+            <span className={`text-sm ${error.includes('Conta criada com sucesso') ? 'text-green-700' : 'text-red-700'}`}>{error}</span>
           </div>
         )}
 
