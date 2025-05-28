@@ -132,29 +132,30 @@ const ChatPDF = () => {
     handleSendMessage(question);
   };
 
-  const handleSendMessage = async (messageText = inputMessage) => {
+  const handleSendMessage = async (messageText = inputMessage, isHidden = false) => {
     if (!messageText.trim() || !currentConversation) return;
 
-    const userMessage = {
-      id: Date.now(),
-      text: messageText,
-      sender: 'user',
-      timestamp: new Date().toLocaleString()
-    };
-
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
-    setInputMessage('');
+    let newMessages = messages;
+    if (!isHidden) {
+      const userMessage = {
+        id: Date.now(),
+        text: messageText,
+        sender: 'user',
+        timestamp: new Date().toLocaleString()
+      };
+      newMessages = [...messages, userMessage];
+      setMessages(newMessages);
+      setInputMessage('');
+    } else {
+      setInputMessage('');
+    }
     setIsLoading(true);
-    
     if (suggestedQuestions.length > 0) {
       setSuggestedQuestions([]);
     }
-
     try {
       console.log('Sending message to ChatPDF API...');
       const response = await chatPdfService.sendMessage(messageText, currentConversation.sourceId || currentConversation.pdf_source_id);
-      
       const aiResponse = {
         id: Date.now() + 1,
         text: response.content,
@@ -162,34 +163,40 @@ const ChatPDF = () => {
         timestamp: new Date().toLocaleString(),
         sources: response.sources
       };
-
       const updatedMessages = [...newMessages, aiResponse];
       setMessages(updatedMessages);
-
-      await supabase.from('messages').insert([
-        {
-          conversation_id: currentConversation.id,
-          content: messageText,
-          role: 'user'
-        },
-        {
-          conversation_id: currentConversation.id,
-          content: response.content,
-          role: 'assistant'
-        }
-      ]);
-
+      // Só salva a mensagem do usuário se não for oculta
+      if (!isHidden) {
+        await supabase.from('messages').insert([
+          {
+            conversation_id: currentConversation.id,
+            content: messageText,
+            role: 'user'
+          },
+          {
+            conversation_id: currentConversation.id,
+            content: response.content,
+            role: 'assistant'
+          }
+        ]);
+      } else {
+        await supabase.from('messages').insert([
+          {
+            conversation_id: currentConversation.id,
+            content: response.content,
+            role: 'assistant'
+          }
+        ]);
+      }
       console.log('Message sent and response received successfully');
     } catch (error) {
       console.error('Failed to send message:', error);
-      
       const errorResponse = {
         id: Date.now() + 1,
         text: 'Desculpe, ocorreu um erro ao processar sua mensagem. Tente novamente.',
         sender: 'ai',
         timestamp: new Date().toLocaleString()
       };
-
       const updatedMessages = [...newMessages, errorResponse];
       setMessages(updatedMessages);
     } finally {
