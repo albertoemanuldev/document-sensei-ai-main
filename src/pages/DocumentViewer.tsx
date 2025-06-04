@@ -2,37 +2,43 @@ import React, { useState, useEffect } from 'react';
 import PDFViewer from '@/components/PDFViewer';
 import { Button } from '@/components/ui/button';
 import { Upload } from 'lucide-react';
+import { toast } from 'sonner';
 
 const DocumentViewer: React.FC = () => {
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [fileUrl, setFileUrl] = useState<string | null>(null);
+  const [extractedText, setExtractedText] = useState<string | null>(null);
 
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    console.log("Arquivo selecionado:", file); // Adicionado para depuração
+    console.log("Arquivo selecionado:", file);
     if (file && file.type === 'application/pdf') {
-      console.log("Arquivo PDF válido:", file.name); // Adicionado para depuração
+      console.log("Arquivo PDF válido:", file.name);
       setUploadedFile(file);
     } else {
-      console.log("Nenhum arquivo selecionado ou não é PDF."); // Adicionado para depuração
+      console.log("Nenhum arquivo selecionado ou não é PDF.");
       setUploadedFile(null);
-      setFileUrl(null); // Limpar URL se o arquivo não for válido ou for removido
+      setFileUrl(null);
     }
-    // Resetar o valor do input para que o onChange dispare novamente com o mesmo arquivo, se necessário
     event.target.value = '';
+  };
+
+  const handleExtractText = (text: string) => {
+    setExtractedText(text);
+    toast.success('Texto extraído com sucesso!');
   };
 
   useEffect(() => {
     if (uploadedFile) {
-      console.log("Criando URL para:", uploadedFile.name); // Adicionado para depuração
+      console.log("Criando URL para:", uploadedFile.name);
       const url = URL.createObjectURL(uploadedFile);
       setFileUrl(url);
       return () => {
-        console.log("Revogando URL:", url); // Adicionado para depuração
+        console.log("Revogando URL:", url);
         URL.revokeObjectURL(url);
       };
     } else {
-      console.log("Nenhum arquivo uploadedFile para criar URL."); // Adicionado para depuração
+      console.log("Nenhum arquivo uploadedFile para criar URL.");
       setFileUrl(null);
     }
   }, [uploadedFile]);
@@ -59,7 +65,7 @@ const DocumentViewer: React.FC = () => {
             className="hidden"
           />
 
-          {uploadedFile && ( // Mudar para fileUrl se quiser mostrar o nome APENAS quando a URL for criada
+          {uploadedFile && (
             <span className="text-sm text-muted-foreground">
               Arquivo selecionado: {uploadedFile.name}
             </span>
@@ -68,7 +74,10 @@ const DocumentViewer: React.FC = () => {
       </div>
 
       <div className="h-[calc(100vh-12rem)]">
-        <PDFViewer file={fileUrl} />
+        <PDFViewer 
+          file={fileUrl}
+          onExtractText={handleExtractText}
+        />
       </div>
     </div>
   );

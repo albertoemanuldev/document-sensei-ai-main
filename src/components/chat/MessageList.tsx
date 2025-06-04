@@ -13,8 +13,10 @@ const MessageList = ({ messages, isLoading, currentConversation }: MessageListPr
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [messages, isLoading]);
 
   // Função para obter o nome do usuário
   const getUserName = () => {
@@ -57,7 +59,7 @@ const MessageList = ({ messages, isLoading, currentConversation }: MessageListPr
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-4">
       {/* Mensagem de boas-vindas no início da conversa */}
       {currentConversation && messages.length > 0 && (
         <WelcomeMessage 
@@ -112,7 +114,7 @@ const MessageList = ({ messages, isLoading, currentConversation }: MessageListPr
           </div>
         </div>
       )}
-      <div ref={messagesEndRef} />
+      <div ref={messagesEndRef} className="h-4" />
     </div>
   );
 };

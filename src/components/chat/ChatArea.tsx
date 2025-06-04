@@ -16,7 +16,7 @@ interface ChatAreaProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
   isUploading: boolean;
   onInputChange: (value: string) => void;
-  onSendMessage: (message?: string) => void;
+  onSendMessage: (message?: string, isHidden?: boolean) => void;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSuggestedQuestion: (question: string) => void;
   onQuickAction: (action: string) => void;
@@ -103,7 +103,7 @@ Quaisquer outros dados funcionais presentes na ficha: O documento menciona que L
         disabled={isUploading}
       />
       {/* Messages */}
-      <div className="flex-1 flex flex-col items-center justify-center">
+      <div className="flex-1 overflow-y-auto">
         {!currentConversation ? (
           <div className="flex flex-col items-center justify-center text-center py-20">
             <div className="w-28 h-28 bg-gradient-to-br from-[#F8FAFC] to-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-none">
@@ -123,16 +123,16 @@ Quaisquer outros dados funcionais presentes na ficha: O documento menciona que L
               <span>Carregar PDF</span>
             </Button>
           </div>
-        ) :
-          <div className="max-w-4xl mx-auto w-full space-y-6">
-            <ExtractFichaButton onExtract={() => onSendMessage(promptFichaFuncional)} />
+        ) : (
+          <div className="max-w-4xl mx-auto w-full space-y-6 p-6">
+            <ExtractFichaButton onExtract={(prompt) => onSendMessage(prompt, true)} prompt={promptFichaFuncional} />
             <MessageList 
               messages={messages} 
               isLoading={isLoading}
               currentConversation={currentConversation}
             />
           </div>
-        }
+        )}
       </div>
       {/* Input Area */}
       {currentConversation && (

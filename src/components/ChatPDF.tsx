@@ -7,6 +7,7 @@ import { Menu } from 'lucide-react';
 import AppSidebar from './layout/AppSidebar';
 import ChatArea from './chat/ChatArea';
 import PDFViewerPanel from './pdf/PDFViewerPanel';
+import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 
 const ChatPDF = () => {
   const { user } = useAuth();
@@ -295,34 +296,54 @@ const ChatPDF = () => {
               </SidebarTrigger>
             </div>
 
-            {/* PDF Viewer - Hidden on mobile when no conversation */}
-            {currentConversation && pdfUrl && (
-              <div className="hidden md:flex w-1/2 border-r border-gray-200 h-screen max-h-screen flex-col">
-                <PDFViewerPanel
+            {/* PDF Viewer and Chat Area with Resizable Panels */}
+            {currentConversation && pdfUrl ? (
+              <ResizablePanelGroup direction="horizontal" className="w-full h-screen">
+                <ResizablePanel defaultSize={50} minSize={30}>
+                  <PDFViewerPanel
+                    currentConversation={currentConversation}
+                    pdfUrl={pdfUrl}
+                    onQuickAction={handleQuickAction}
+                  />
+                </ResizablePanel>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={50} minSize={30} className="h-full">
+                  <div className="h-full flex flex-col">
+                    <ChatArea
+                      currentConversation={currentConversation}
+                      messages={messages}
+                      inputMessage={inputMessage}
+                      isLoading={isLoading}
+                      suggestedQuestions={suggestedQuestions}
+                      fileInputRef={fileInputRef}
+                      isUploading={isUploading}
+                      onInputChange={setInputMessage}
+                      onSendMessage={handleSendMessage}
+                      onFileUpload={handleFileUpload}
+                      onSuggestedQuestion={handleSuggestedQuestion}
+                      onQuickAction={handleQuickAction}
+                    />
+                  </div>
+                </ResizablePanel>
+              </ResizablePanelGroup>
+            ) : (
+              <div className="w-full flex flex-col h-screen max-h-screen overflow-y-auto">
+                <ChatArea
                   currentConversation={currentConversation}
-                  pdfUrl={pdfUrl}
+                  messages={messages}
+                  inputMessage={inputMessage}
+                  isLoading={isLoading}
+                  suggestedQuestions={suggestedQuestions}
+                  fileInputRef={fileInputRef}
+                  isUploading={isUploading}
+                  onInputChange={setInputMessage}
+                  onSendMessage={handleSendMessage}
+                  onFileUpload={handleFileUpload}
+                  onSuggestedQuestion={handleSuggestedQuestion}
                   onQuickAction={handleQuickAction}
                 />
               </div>
             )}
-
-            {/* Chat Area */}
-            <div className={`${currentConversation && pdfUrl ? 'w-full md:w-1/2' : 'w-full'} flex flex-col h-screen max-h-screen overflow-y-auto`}>
-              <ChatArea
-                currentConversation={currentConversation}
-                messages={messages}
-                inputMessage={inputMessage}
-                isLoading={isLoading}
-                suggestedQuestions={suggestedQuestions}
-                fileInputRef={fileInputRef}
-                isUploading={isUploading}
-                onInputChange={setInputMessage}
-                onSendMessage={handleSendMessage}
-                onFileUpload={handleFileUpload}
-                onSuggestedQuestion={handleSuggestedQuestion}
-                onQuickAction={handleQuickAction}
-              />
-            </div>
           </div>
         </SidebarInset>
       </div>
