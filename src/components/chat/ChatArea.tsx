@@ -16,7 +16,7 @@ interface ChatAreaProps {
   fileInputRef: React.RefObject<HTMLInputElement>;
   isUploading: boolean;
   onInputChange: (value: string) => void;
-  onSendMessage: (message?: string, isHidden?: boolean) => void;
+  onSendMessage: (message?: string) => void;
   onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void;
   onSuggestedQuestion: (question: string) => void;
   onQuickAction: (action: string) => void;
@@ -45,7 +45,44 @@ const ChatArea = ({
     }
   };
 
-  const promptFichaFuncional = `Extraia exatamente os seguintes dados, caso existam, da ficha funcional do profissional da saúde apresentada neste documento PDF:\n\n- Nome completo\n- Data de nascimento\n- Portaria de nomeação\n- Data de ingresso/data de posse\n- Especialidade\n- Períodos de férias\n- Licenças/licenças prêmio/afastamentos\n- Progressões\n- Número de matrícula\n- Averbações\n- PDV (Plano de Demissão Voluntária)\n- Regime de ingresso (estatutário ou celetista)\n- Dados de cessão (se foi cedido para outro órgão, quais órgãos, datas e documentos relacionados)\n- Órgão de origem\n- Dados de exoneração (motivo, datas e documentos)\n- Quaisquer outros dados funcionais presentes na ficha\n\nExemplo de saída esperada:\nNome completo: Luiz Fernando Silva de Barros\nData de nascimento: 19.02.54\nPortaria de nomeação: Não especificada no documento.\nData de ingresso/data de posse: 12.02.1985\nEspecialidade: Não especificada no documento.\nPeríodos de férias: Não especificados no documento.\nLicenças/licenças prêmio/afastamentos: Não especificados no documento.\nProgressões: Não especificadas no documento.\nNúmero de matrícula: 43.232\nAverbações: Não especificadas no documento.\nPDV (Plano de Demissão Voluntária): Não mencionado no documento.\nRegime de ingresso (estatutário ou celetista): Estatutário (conforme a transferência para o regime jurídico do Estatuto dos Funcionários Públicos Civis do Estado de Alagoas).\nDados de cessão: Não mencionados no documento.\nÓrgão de origem: Secretaria de Saúde e Serviço Social do Estado de Alagoas.\nDados de exoneração: Não mencionados no documento.\nQuaisquer outros dados funcionais presentes na ficha: O documento menciona que Luiz Fernando Silva de Barros é médico, código NS-421-B, e que ele é casado. Também contém informações sobre sua filiação e dados de identificação, como CPF e número da carteira de identidade.`;
+  const promptFichaFuncional = `
+Extraia exatamente os seguintes dados, caso existam, da ficha funcional do profissional da saúde apresentada neste documento PDF:
+
+- Nome completo
+- Data de nascimento
+- Portaria de nomeação
+- Data de ingresso/data de posse
+- Especialidade
+- Períodos de férias
+- Licenças/licenças prêmio/afastamentos
+- Progressões
+- Número de matrícula
+- Averbações
+- PDV (Plano de Demissão Voluntária)
+- Regime de ingresso (estatutário ou celetista)
+- Dados de cessão (se foi cedido para outro órgão, quais órgãos, datas e documentos relacionados)
+- Órgão de origem
+- Dados de exoneração (motivo, datas e documentos)
+- Quaisquer outros dados funcionais presentes na ficha
+
+Exemplo de saída esperada:
+Nome completo: Luiz Fernando Silva de Barros
+Data de nascimento: 19.02.54
+Portaria de nomeação: Não especificada no documento.
+Data de ingresso/data de posse: 12.02.1985
+Especialidade: Não especificada no documento.
+Períodos de férias: Não especificados no documento.
+Licenças/licenças prêmio/afastamentos: Não especificados no documento.
+Progressões: Não especificadas no documento.
+Número de matrícula: 43.232
+Averbações: Não especificadas no documento.
+PDV (Plano de Demissão Voluntária): Não mencionado no documento.
+Regime de ingresso (estatutário ou celetista): Estatutário (conforme a transferência para o regime jurídico do Estatuto dos Funcionários Públicos Civis do Estado de Alagoas).
+Dados de cessão: Não mencionados no documento.
+Órgão de origem: Secretaria de Saúde e Serviço Social do Estado de Alagoas.
+Dados de exoneração: Não mencionados no documento.
+Quaisquer outros dados funcionais presentes na ficha: O documento menciona que Luiz Fernando Silva de Barros é médico, código NS-421-B, e que ele é casado. Também contém informações sobre sua filiação e dados de identificação, como CPF e número da carteira de identidade.
+`;
 
   return (
     <div className="flex flex-col h-full bg-[#F8FAFC]">
@@ -66,7 +103,7 @@ const ChatArea = ({
         disabled={isUploading}
       />
       {/* Messages */}
-      <div className="flex-1 flex flex-col items-center w-full">
+      <div className="flex-1 flex flex-col items-center justify-center">
         {!currentConversation ? (
           <div className="flex flex-col items-center justify-center text-center py-20">
             <div className="w-28 h-28 bg-gradient-to-br from-[#F8FAFC] to-white rounded-3xl flex items-center justify-center mx-auto mb-8 shadow-none">
@@ -87,8 +124,8 @@ const ChatArea = ({
             </Button>
           </div>
         ) :
-          <div className="max-w-4xl mx-auto w-full flex-1 flex flex-col overflow-y-auto space-y-6">
-            <ExtractFichaButton onExtract={(prompt) => onSendMessage(prompt, true)} prompt={promptFichaFuncional} />
+          <div className="max-w-4xl mx-auto w-full space-y-6">
+            <ExtractFichaButton onExtract={() => onSendMessage(promptFichaFuncional)} />
             <MessageList 
               messages={messages} 
               isLoading={isLoading}

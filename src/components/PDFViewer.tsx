@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { 
   ZoomIn, 
@@ -6,10 +6,13 @@ import {
   ChevronLeft, 
   ChevronRight,
   FileText,
-  RotateCw
+  RotateCw,
+  FileText as FileTextIcon,
+  Loader2
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // Configure PDF.js worker
 // pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.js`;
@@ -18,21 +21,27 @@ pdfjs.GlobalWorkerOptions.workerSrc = `/pdfjs/pdf.worker.min.mjs`;
 interface PDFViewerProps {
   file: string | null;
   className?: string;
+  onExtractText?: (text: string) => void;
 }
 
-const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
+const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "", onExtractText }) => {
   const [numPages, setNumPages] = useState<number | null>(null);
-  const [pageNumber, setPageNumber] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.2);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [rotation, setRotation] = useState(0);
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [processingProgress, setProcessingProgress] = useState(0);
+  const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const documentRef = useRef<any>(null);
+  const progressInterval = useRef<NodeJS.Timeout>();
 
   const onDocumentLoadSuccess = useCallback(({ numPages }: { numPages: number }) => {
     setNumPages(numPages);
     setLoading(false);
     setError(null);
-    setPageNumber(1);
+    pageRefs.current = new Array(numPages).fill(null);
   }, []);
 
   const onDocumentLoadError = useCallback((error: Error) => {
@@ -45,12 +54,43 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
     console.error('Erro ao carregar página:', error);
   }, []);
 
+  const startProgressAnimation = () => {
+    setProcessingProgress(0);
+    progressInterval.current = setInterval(() => {
+      setProcessingProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval.current);
+          return prev;
+        }
+        return prev + 10;
+      });
+    }, 500);
+  };
+
+  const stopProgressAnimation = () => {
+    if (progressInterval.current) {
+      clearInterval(progressInterval.current);
+    }
+    setProcessingProgress(100);
+    setTimeout(() => {
+      setProcessingProgress(0);
+    }, 1000);
+  };
+
   const goToPrevPage = () => {
-    setPageNumber(prev => Math.max(prev - 1, 1));
+    if (currentPage > 1) {
+      const newPage = currentPage - 1;
+      setCurrentPage(newPage);
+      pageRefs.current[newPage - 1]?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const goToNextPage = () => {
-    setPageNumber(prev => Math.min(prev + 1, numPages || 1));
+    if (currentPage < (numPages || 1)) {
+      const newPage = currentPage + 1;
+      setCurrentPage(newPage);
+      pageRefs.current[newPage - 1]?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   const zoomIn = () => {
@@ -67,6 +107,37 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
 
   const rotate = () => {
     setRotation((prev) => (prev + 90) % 360);
+  };
+
+  const handleExtractText = async () => {
+    if (!documentRef.current || !onExtractText) return;
+
+    setIsExtracting(true);
+    startProgressAnimation();
+    
+    try {
+      const textContent = await documentRef.current.getTextContent();
+      const extractedText = textContent.items
+        .map((item: any) => item.str)
+        .join(' ');
+      
+      toast.promise(
+        Promise.resolve(extractedText),
+        {
+          loading: 'Extraindo texto do documento...',
+          success: 'Texto extraído com sucesso!',
+          error: 'Erro ao extrair texto do documento',
+        }
+      );
+      
+      onExtractText(extractedText);
+    } catch (error) {
+      console.error('Erro ao extrair texto:', error);
+      toast.error('Erro ao extrair texto do documento');
+    } finally {
+      stopProgressAnimation();
+      setIsExtracting(false);
+    }
   };
 
   if (!file) {
@@ -90,7 +161,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
   }
 
   return (
-    <div className={cn("bg-background rounded-lg shadow-sm border", className)}>
+    <div className={cn("bg-background rounded-lg shadow-sm border relative h-full flex flex-col", className)}>
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-muted/50 rounded-t-lg">
         <div className="flex items-center space-x-2">
@@ -98,20 +169,20 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
             variant="outline"
             size="icon"
             onClick={goToPrevPage}
-            disabled={pageNumber <= 1}
+            disabled={currentPage <= 1}
           >
             <ChevronLeft className="w-4 h-4" />
           </Button>
           
           <span className="px-3 py-1 bg-background border rounded-md text-sm font-medium">
-            {pageNumber} de {numPages || 0}
+            {currentPage} de {numPages || 0}
           </span>
           
           <Button
             variant="outline"
             size="icon"
             onClick={goToNextPage}
-            disabled={pageNumber >= (numPages || 0)}
+            disabled={currentPage >= (numPages || 0)}
           >
             <ChevronRight className="w-4 h-4" />
           </Button>
@@ -140,6 +211,7 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
           >
             <ZoomIn className="w-4 h-4" />
           </Button>
+
           <Button
             variant="outline"
             size="icon"
@@ -148,34 +220,65 @@ const PDFViewer: React.FC<PDFViewerProps> = ({ file, className = "" }) => {
           >
             <RotateCw className="w-4 h-4" />
           </Button>
+
+          {onExtractText && (
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleExtractText}
+              disabled={isExtracting}
+              title="Extrair texto"
+              className={cn(
+                "relative",
+                isExtracting && "cursor-not-allowed"
+              )}
+            >
+              {isExtracting ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <FileTextIcon className="w-4 h-4" />
+              )}
+              {isExtracting && (
+                <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                  Extraindo texto...
+                </span>
+              )}
+            </Button>
+          )}
         </div>
       </div>
 
-      {/* PDF Viewer */}
-      <div className="flex justify-center p-4 bg-muted/30 overflow-auto" style={{ maxHeight: '70vh' }}>
-        {loading && (
-          <div className="flex items-center justify-center h-96">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-            <span className="ml-3 text-muted-foreground">Carregando documento...</span>
-          </div>
-        )}
-        
+      {/* PDF Document */}
+      <div className="flex-1 overflow-auto p-4">
         <Document
           file={file}
           onLoadSuccess={onDocumentLoadSuccess}
           onLoadError={onDocumentLoadError}
-          loading=""
-          className="shadow-lg"
+          loading={
+            <div className="flex items-center justify-center h-full">
+              <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+            </div>
+          }
+          ref={documentRef}
+          className="flex flex-col items-center"
         >
-          <Page
-            pageNumber={pageNumber}
-            scale={scale}
-            rotate={rotation}
-            onLoadError={onPageLoadError}
-            className="border border-border"
-            renderTextLayer={true}
-            renderAnnotationLayer={true}
-          />
+          {Array.from(new Array(numPages), (_, index) => (
+            <div
+              key={`page_${index + 1}`}
+              ref={el => pageRefs.current[index] = el}
+              className="mb-4 last:mb-0"
+            >
+              <Page
+                pageNumber={index + 1}
+                scale={scale}
+                rotate={rotation}
+                onLoadError={onPageLoadError}
+                renderTextLayer={false}
+                renderAnnotationLayer={false}
+                className="shadow-lg"
+              />
+            </div>
+          ))}
         </Document>
       </div>
     </div>

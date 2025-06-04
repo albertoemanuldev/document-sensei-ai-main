@@ -1,7 +1,8 @@
-import React from 'react';
-import { BookOpen, FileText } from 'lucide-react';
+import React, { useState } from 'react';
+import { BookOpen, FileText, ClipboardList } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PDFViewer from '../PDFViewer';
+import { toast } from 'sonner';
 
 interface PDFViewerPanelProps {
   currentConversation: any;
@@ -10,41 +11,58 @@ interface PDFViewerPanelProps {
 }
 
 const PDFViewerPanel = ({ currentConversation, pdfUrl, onQuickAction }: PDFViewerPanelProps) => {
+  const [isExtracting, setIsExtracting] = useState(false);
+
   if (!currentConversation || !pdfUrl) {
     return null;
   }
 
+  const handleExtractText = () => {
+    setIsExtracting(false);
+    toast.success('Dados extraídos com sucesso!');
+  };
+
+  const handleExtractData = () => {
+    setIsExtracting(true);
+  };
+
   return (
-    <div className="bg-white/60 backdrop-blur-sm border-r border-gray-200 h-full flex flex-col">
-      <div className="p-6 border-b border-gray-200 bg-white/80">
-        <h3 className="text-lg font-bold text-gray-900 truncate mb-4">
-          {currentConversation.title}
-        </h3>
-        <div className="flex flex-wrap gap-2">
+    <div className="flex flex-col h-full bg-white">
+      {/* PDF Viewer Header */}
+      <div className="p-4 border-b bg-white/80 backdrop-blur-sm flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-[#F8FAFC] rounded-full flex items-center justify-center">
+            <FileText className="w-4 h-4 text-[#0A2540]" />
+          </div>
+          <h2 className="text-lg font-semibold text-[#0A2540]">
+            {currentConversation?.pdf_name || 'Visualizador de PDF'}
+          </h2>
+        </div>
+        <div className="flex items-center space-x-2">
           <Button
-            onClick={() => onQuickAction('explain')}
             variant="outline"
             size="sm"
-            className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-blue-200"
+            onClick={() => onQuickAction('explain')}
+            className="text-xs"
           >
-            <BookOpen className="w-4 h-4 mr-2" />
             Explicar
           </Button>
           <Button
-            onClick={() => onQuickAction('summarize')}
             variant="outline"
             size="sm"
-            className="bg-green-100 text-green-700 hover:bg-green-200 border-green-200"
+            onClick={() => onQuickAction('summarize')}
+            className="text-xs"
           >
-            <FileText className="w-4 h-4 mr-2" />
             Resumir
           </Button>
         </div>
       </div>
-      <div className="flex-1">
-        <PDFViewer 
-          file={pdfUrl} 
-        />
+
+      {/* PDF Viewer */}
+      <div className="flex-1 overflow-hidden h-full">
+        <div className="h-full w-full">
+          <PDFViewer file={pdfUrl} />
+        </div>
       </div>
     </div>
   );
